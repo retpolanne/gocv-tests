@@ -15,6 +15,18 @@ func startImage(imageFile string) gocv.Mat {
 	return mat
 }
 
+func startVideo(videoFile string) (*gocv.VideoCapture, gocv.Mat) {
+	video, err := gocv.VideoCaptureFile(videoFile)
+
+	if err != nil {
+		panic(err)
+	}
+
+	mat := gocv.NewMat()
+	fmt.Printf("[DEBUG] startVideo - started video file %v and mat %v\n", video, mat)
+	return video, mat
+}
+
 func startWebcam(deviceId int) (*gocv.VideoCapture, gocv.Mat) {
 	webcam, err := gocv.VideoCaptureDevice(deviceId)
 
@@ -48,13 +60,13 @@ func drawRectangles(mat gocv.Mat, classifierFile string) {
 	defer classifier.Close()
 }
 
-func renderMatWindow(mat gocv.Mat, webcam *gocv.VideoCapture) {
+func renderMatWindow(mat gocv.Mat, videoFeed *gocv.VideoCapture) {
 	window := gocv.NewWindow("Face detection")
-	fmt.Printf("[DEBUG] renderMatWindow - starting window with mat %v and webcam %v\n", mat, webcam)
+	fmt.Printf("[DEBUG] renderMatWindow - starting window with mat %v and videoFeed %v\n", mat, videoFeed)
 	for {
-		if (*webcam != gocv.VideoCapture{}) {
-			fmt.Printf("[DEBUG] renderMatWindow - webcam exists and is located at %v\n", webcam)
-			webcam.Read(&mat)
+		if (*videoFeed != gocv.VideoCapture{}) {
+			fmt.Printf("[DEBUG] renderMatWindow - videoFeed exists and is located at %v\n", videoFeed)
+			videoFeed.Read(&mat)
 		}
 		window.IMShow(mat)
 		fmt.Printf("[DEBUG:1] renderMatWindow - currently rendering mat %v\n", mat)
@@ -73,28 +85,36 @@ func main() {
 	imagePtr := flag.String(
 		"image", "", "Uses image file instead of webcam feed",
 	)
+	videoPtr := flag.String(
+		"video", "", "Uses video file instead of webcam feed",
+	)
 	flag.Parse()
 
 	if *classifierPtr == "" {
 		panic("Please provide a classifier file")
 	}
 
-	webcam, mat := &gocv.VideoCapture{}, gocv.Mat{}
+	videoFeed, mat := &gocv.VideoCapture{}, gocv.Mat{}
 
-	// TODO - i believe I should share the mat address, maybe
 	if *imagePtr != "" {
-		fmt.Println("[INFO] main - using picture")
+		fmt.Printf("[INFO] main - using picture file %v\n", *imagePtr)
 		mat = startImage(*imagePtr)
 	} else {
-		fmt.Println("[INFO] main - using webcam")
-		webcam, mat = startWebcam(*deviceIdPtr)
+		fmt.Println("[INFO] main - using video capture")
+		if *videoPtr != "" {
+			fmt.Printf("[INFO] main - using video file %v\n", *videoPtr)
+			videoFeed, mat = startVideo(*videoPtr)
+		} else {
+			fmt.Printf("[INFO] main - using webcam feed from device id %d\n", *deviceIdPtr)
+			videoFeed, mat = startWebcam(*deviceIdPtr)
+		}
 	}
 
 	go drawRectangles(mat, *classifierPtr)
-	renderMatWindow(mat, webcam)
+	renderMatWindow(mat, videoFeed)
 
 	// TODO - learn about panic and defer
 
-	defer webcam.Close()
+	defer videoFeed.Close()
 	defer mat.Close()
 }
