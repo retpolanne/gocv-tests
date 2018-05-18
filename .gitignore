@@ -5,6 +5,11 @@
 *.so
 *.dylib
 
+# Image related extensions
+*.jpg
+*.png
+
+
 # Test binary, build with `go test -c`
 *.test
 
