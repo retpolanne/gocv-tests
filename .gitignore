@@ -7,11 +7,18 @@
 
 # Image related extensions
 *.jpg
+*.jpeg
 *.png
 
+# Tests
+./cats
+*.xml
 
 # Test binary, build with `go test -c`
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# Mac
+.DS_Store
